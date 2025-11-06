@@ -73,7 +73,7 @@ options:
       - Under TrueNAS CORE, this option is ignored. However, missing ancestors are not created.
     type: bool
     default: false
-  comment:
+  comments:
     description:
       - Arbitrary comment or notes for the dataset.
     type: str
@@ -151,7 +151,7 @@ def main():
         force_size=dict(type="bool", default=False),
         create_ancestors=dict(type="bool", default=False),
         # The rest of the properties...
-        comment=dict(type="str"),
+        comments=dict(type="str"),
         sync=dict(type="str"),
         snapdev=dict(type="str"),
         compression=dict(type="str"),
@@ -319,7 +319,7 @@ def build_create_args(params, module):
 
     # The rest of the properties are optional
     create_props = [
-        "comment",
+        "comments",
         "sync",
         "snapdev",
         "compression",
@@ -399,7 +399,7 @@ def build_update_args(params, existing_ds, module):
 
     # For normal props (both filesystem + volume)
     updatable_props = [
-        "comment",
+        "comments",
         "sync",
         "snapdev",
         "compression",
