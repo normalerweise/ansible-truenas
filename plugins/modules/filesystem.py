@@ -290,10 +290,15 @@ def build_create_args(params, module):
 
     create_args = dict(name=params["name"], type=params["type"])
 
-    if params.get("create_ancestors") is not None:
+    create_ancestors = params.get("create_ancestors")
+    if create_ancestors is not None:
         if __tn_version['type'] == "CORE":
             # TrueNAS CORE doesn't support create_ancestors.
-            module.warn("TrueNAS CORE doesn't support create_ancestors option.")
+            if type(create_ancestors) == bool and create_ancestors == False:
+                # Don't send a warning message. Everything is fine.
+                pass
+            else:
+                module.warn("TrueNAS CORE doesn't support create_ancestors option.")
         else:
             create_args["create_ancestors"] = params["create_ancestors"]
 
