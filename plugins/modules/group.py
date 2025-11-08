@@ -181,9 +181,8 @@ def main():
             if non_unique is not None:
                 arg['allow_duplicate_gid'] = non_unique
 
-                result['arg'] = arg
             if module.check_mode:
-                result['msg'] = f"Would have created group {group}"
+                result['msg'] = f"Would have created group {group} with {arg}"
             else:
                 try:
                     err = mw.call("group.create", arg)
