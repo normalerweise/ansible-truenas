@@ -107,9 +107,11 @@ filesystem:
 """
 
 import re
+
 from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.middleware import MiddleWare as MW
+
 from ..module_utils import setup
+from ..module_utils.middleware import MiddleWare as MW
 
 
 def main():
@@ -126,9 +128,11 @@ def main():
     argument_spec = dict(
         name=dict(type="str", required=True),
         state=dict(type="str", choices=["absent", "present"], default="present"),
-        type=dict(type="str",
-                  choices=["FILESYSTEM", "VOLUME", "filesystem", "volume"],
-                  default="FILESYSTEM"),
+        type=dict(
+            type="str",
+            choices=["FILESYSTEM", "VOLUME", "filesystem", "volume"],
+            default="FILESYSTEM",
+        ),
         volsize=dict(type="str"),
         volblocksize=dict(
             type="str",
@@ -176,6 +180,33 @@ def main():
         aclmode=dict(type="str"),
         acltype=dict(type="str"),
         xattr=dict(type="str"),
+        share_type=dict(
+            type="str", choices=["GENERIC", "MULTIPROTOCOL", "NFS", "SMB", "APPS"]
+        ),
+        # Encryption options - full TrueNAS API support
+        encryption=dict(type="bool", default=False),
+        inherit_encryption=dict(type="bool", default=True),
+        encryption_options=dict(
+            type="dict",
+            options=dict(
+                generate_key=dict(type="bool", default=False),
+                pbkdf2iters=dict(type="int", default=350000),
+                algorithm=dict(
+                    type="str",
+                    choices=[
+                        "AES-128-CCM",
+                        "AES-192-CCM",
+                        "AES-256-CCM",
+                        "AES-128-GCM",
+                        "AES-192-GCM",
+                        "AES-256-GCM",
+                    ],
+                    default="AES-256-GCM",
+                ),
+                passphrase=dict(type="str", no_log=True),
+                key=dict(type="str", no_log=True),
+            ),
+        ),
         user_properties=dict(
             type="list",
             elements="dict",
@@ -213,9 +244,9 @@ def main():
     # value.
     # This seems like the sort of thing that Ansible argument_spec
     # would support, but apparently it doesn't.
-    if 'type' in module.params:
-        if module.params['type'] in ["filesystem", "volume"]:
-            module.params['type'] = module.params['type'].upper()
+    if "type" in module.params:
+        if module.params["type"] in ["filesystem", "volume"]:
+            module.params["type"] = module.params["type"].upper()
 
     # Query if it exists
     try:
@@ -292,7 +323,7 @@ def build_create_args(params, module):
 
     create_ancestors = params.get("create_ancestors")
     if create_ancestors is not None:
-        if __tn_version['type'] == "CORE":
+        if __tn_version["type"] == "CORE":
             # TrueNAS CORE doesn't support create_ancestors.
             if type(create_ancestors) == bool and create_ancestors == False:
                 # Don't send a warning message. Everything is fine.
@@ -301,6 +332,53 @@ def build_create_args(params, module):
                 module.warn("TrueNAS CORE doesn't support create_ancestors option.")
         else:
             create_args["create_ancestors"] = params["create_ancestors"]
+
+    # Handle encryption (only at creation time) - Full TrueNAS API support
+    encryption = params.get("encryption")
+    inherit_encryption = params.get("inherit_encryption")
+    encryption_options = params.get("encryption_options")
+
+    if encryption_options is not None:
+        # User provided encryption_options - enable encryption
+        create_args["encryption"] = True
+        create_args["inherit_encryption"] = False
+
+        # Build encryption_options dict, removing None values
+        enc_opts = {}
+        if encryption_options.get("generate_key") is not None:
+            enc_opts["generate_key"] = encryption_options["generate_key"]
+        if encryption_options.get("pbkdf2iters") is not None:
+            enc_opts["pbkdf2iters"] = encryption_options["pbkdf2iters"]
+        if encryption_options.get("algorithm") is not None:
+            enc_opts["algorithm"] = encryption_options["algorithm"]
+        if encryption_options.get("passphrase") is not None:
+            enc_opts["passphrase"] = encryption_options["passphrase"]
+        if encryption_options.get("key") is not None:
+            enc_opts["key"] = encryption_options["key"]
+
+        # Validate encryption_options
+        has_key = encryption_options.get("key") is not None
+        has_passphrase = encryption_options.get("passphrase") is not None
+        generate_key = encryption_options.get("generate_key", False)
+
+        if generate_key and (has_key or has_passphrase):
+            module.fail_json(
+                msg="generate_key cannot be used together with key or passphrase"
+            )
+        if has_key and has_passphrase:
+            module.fail_json(msg="key and passphrase are mutually exclusive")
+        if not (generate_key or has_key or has_passphrase):
+            module.fail_json(
+                msg="encryption_options must include either generate_key=true, key, or passphrase"
+            )
+
+        create_args["encryption_options"] = enc_opts
+    elif encryption is True:
+        # User explicitly enabled encryption without providing options
+        module.fail_json(msg="encryption_options is required when encryption=true")
+    elif inherit_encryption is not None:
+        # User specified inherit_encryption without enabling encryption
+        create_args["inherit_encryption"] = inherit_encryption
 
     if create_args["type"] == "VOLUME":
         volsize = params.get("volsize")
@@ -344,6 +422,7 @@ def build_create_args(params, module):
         "aclmode",
         "acltype",
         "xattr",
+        "share_type",
     ]
     for prop in create_props:
         val = params.get(prop)
@@ -424,6 +503,7 @@ def build_update_args(params, existing_ds, module):
         "aclmode",
         "acltype",
         "xattr",
+        # "share_type", -> due to error "data.share_type: Extra inputs are not permitted"
     ]
     for prop in updatable_props:
         if params.get(prop) is None:
@@ -482,6 +562,7 @@ def parse_volblocksize(value):
         return int(val)
     raise ValueError(f"Cannot parse volblocksize='{value}'")
 
+
 def parse_volsize(value):
     """
     Convert a string giving a volume size, like '25GB', into an
@@ -494,25 +575,25 @@ def parse_volsize(value):
     """
 
     # Split the value into an integer prefix and a suffix.
-    match = re.match(r'^\s*(\d+)\s*([KMGT]i?B?)?\s*$', value)
+    match = re.match(r"^\s*(\d+)\s*([KMGT]i?B?)?\s*$", value)
 
     # the volume size is supposed to be a multiplier of the block
     # size, which in turn is usually a power of 2. So if the caller
     # just specifies K, M, G, or T, we'll use powers of 2.
     unit_multiplier = {
-        "":       1,
-        "K":   1<<10,
-        "KB":  1000,
-        "KiB": 1<<10,
-        "M":   1<<20,
-        "MB":  1000**2,
-        "MiB": 1<<20,
-        "G":   1<<30,
-        "GB":  1000**3,
-        "GiB": 1<<30,
-        "T":   1<<40,
-        "TB":  1000**4,
-        "TiB": 1<<40,
+        "": 1,
+        "K": 1 << 10,
+        "KB": 1000,
+        "KiB": 1 << 10,
+        "M": 1 << 20,
+        "MB": 1000**2,
+        "MiB": 1 << 20,
+        "G": 1 << 30,
+        "GB": 1000**3,
+        "GiB": 1 << 30,
+        "T": 1 << 40,
+        "TB": 1000**4,
+        "TiB": 1 << 40,
     }
 
     if match:
@@ -521,6 +602,7 @@ def parse_volsize(value):
         return n * unit_multiplier[unit]
     else:
         raise ValueError(f"Can't parse volsize={value}")
+
 
 def prop_rawvalue(dataset_entry, prop_name):
     """
