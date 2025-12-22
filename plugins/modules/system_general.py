@@ -20,6 +20,12 @@ options:
       - HTTPS port for the web UI.
     type: int
     required: false
+  timezone:
+    description:
+      - System timezone (e.g., "Europe/Berlin", "America/New_York").
+      - Must be a valid timezone from the tz database.
+    type: str
+    required: false
 """
 
 EXAMPLES = """
@@ -27,6 +33,16 @@ EXAMPLES = """
   normalerweise.truenas.system_general:
     ui_port: 81
     ui_httpsport: 4443
+
+- name: Set system timezone
+  normalerweise.truenas.system_general:
+    timezone: "Europe/Berlin"
+
+- name: Configure web UI ports and timezone
+  normalerweise.truenas.system_general:
+    ui_port: 8080
+    ui_httpsport: 4443
+    timezone: "Europe/Berlin"
 """
 
 RETURN = """
@@ -50,6 +66,7 @@ def main():
         argument_spec=dict(
             ui_port=dict(type="int", required=False),
             ui_httpsport=dict(type="int", required=False),
+            timezone=dict(type="str", required=False),
         ),
         supports_check_mode=True,
     )
@@ -73,6 +90,8 @@ def main():
         update_params["ui_port"] = module.params["ui_port"]
     if module.params["ui_httpsport"] is not None:
         update_params["ui_httpsport"] = module.params["ui_httpsport"]
+    if module.params["timezone"] is not None:
+        update_params["timezone"] = module.params["timezone"]
 
     # If no parameters specified, nothing to do
     if not update_params:
