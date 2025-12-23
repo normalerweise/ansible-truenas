@@ -21,11 +21,15 @@ options:
     aliases: ['name']
   state:
     description:
-      - Whether the app should exist or not.
+      - Desired state of the application.
       - C(present) ensures the app exists and is configured as specified.
       - C(absent) ensures the app is removed.
+      - C(started) ensures the app is running (idempotent).
+      - C(stopped) ensures the app is stopped (idempotent).
+      - C(restarted) always restarts the app.
+      - C(reloaded) reloads the app if running, starts if stopped.
     type: str
-    choices: [ absent, present ]
+    choices: [ absent, present, started, stopped, restarted, reloaded ]
     default: present
   custom_app:
     description:
@@ -121,6 +125,26 @@ EXAMPLES = r"""
   normalerweise.truenas.app:
     app_name: old-app
     state: absent
+
+- name: Ensure app is running
+  normalerweise.truenas.app:
+    app_name: caddy-reverse-proxy
+    state: started
+
+- name: Stop an app
+  normalerweise.truenas.app:
+    app_name: caddy-reverse-proxy
+    state: stopped
+
+- name: Restart app (always bounces)
+  normalerweise.truenas.app:
+    app_name: caddy-reverse-proxy
+    state: restarted
+
+- name: Reload app (start if stopped)
+  normalerweise.truenas.app:
+    app_name: caddy-reverse-proxy
+    state: reloaded
 """
 
 RETURN = r"""
@@ -191,7 +215,18 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             app_name=dict(type="str", required=True, aliases=["name"]),
-            state=dict(type="str", default="present", choices=["absent", "present"]),
+            state=dict(
+                type="str",
+                default="present",
+                choices=[
+                    "absent",
+                    "present",
+                    "started",
+                    "stopped",
+                    "restarted",
+                    "reloaded",
+                ],
+            ),
             custom_app=dict(type="bool", default=False),
             catalog_app=dict(type="str"),
             train=dict(type="str", default="stable"),
@@ -202,9 +237,6 @@ def main():
         ),
         supports_check_mode=True,
         mutually_exclusive=[["custom_compose_config", "custom_compose_config_string"]],
-        required_if=[
-            ["custom_app", False, ["catalog_app"]],
-        ],
     )
 
     result = dict(changed=False, msg="")
@@ -234,6 +266,11 @@ def main():
         existing_app = app_list[0] if app_exists else None
     except Exception as e:
         module.fail_json(msg=f"Error querying app {app_name}: {e}")
+
+    # Validate parameters for state=present
+    if state == "present":
+        if not custom_app and not catalog_app:
+            module.fail_json(msg="catalog_app is required when custom_app is False")
 
     if state == "present":
         if not app_exists:
@@ -278,11 +315,48 @@ def main():
                     result["failed_invocation"] = create_args
                     module.fail_json(msg=f"Error creating app {app_name}: {e}")
         else:
-            # App exists - for now, we don't support updates
-            # This would require app.update which has different semantics
-            result["changed"] = False
-            result["app"] = existing_app
-            result["msg"] = f"App {app_name} already exists (updates not yet supported)"
+            # App exists - check if update is needed
+            update_args = {}
+
+            # Add optional parameters (only those accepted by app.update)
+            if values is not None:
+                update_args["values"] = values
+
+            if custom_compose_config is not None:
+                update_args["custom_compose_config"] = custom_compose_config
+
+            if custom_compose_config_string is not None:
+                update_args["custom_compose_config_string"] = (
+                    custom_compose_config_string
+                )
+
+            # Check if update is needed by comparing compose config
+            needs_update = False
+            if custom_app:
+                # For custom apps, check if compose config changed
+                existing_compose = existing_app.get("custom_compose_config_string", "")
+                new_compose = custom_compose_config_string or ""
+                if existing_compose != new_compose:
+                    needs_update = True
+
+            if needs_update:
+                if module.check_mode:
+                    result["msg"] = f"Would have updated app {app_name}"
+                    result["changed"] = True
+                else:
+                    try:
+                        # app.update is a job-type method
+                        app_result = mw.job("app.update", app_name, update_args)
+                        result["app"] = app_result
+                        result["changed"] = True
+                        result["msg"] = f"Updated app {app_name}"
+                    except Exception as e:
+                        result["failed_invocation"] = update_args
+                        module.fail_json(msg=f"Error updating app {app_name}: {e}")
+            else:
+                result["changed"] = False
+                result["app"] = existing_app
+                result["msg"] = f"App {app_name} is up to date"
 
     elif state == "absent":
         if app_exists:
@@ -302,6 +376,85 @@ def main():
             # App doesn't exist, nothing to do
             result["changed"] = False
             result["msg"] = f"App {app_name} does not exist"
+
+    elif state in ["started", "stopped", "restarted", "reloaded"]:
+        # Lifecycle management - app must exist
+        if not app_exists:
+            module.fail_json(
+                msg=f"App {app_name} does not exist. Cannot manage lifecycle."
+            )
+
+        current_state = existing_app.get("state", "UNKNOWN")
+        is_running = current_state == "RUNNING"
+
+        if state == "started":
+            if is_running:
+                result["msg"] = f"App {app_name} is already running"
+                result["changed"] = False
+            else:
+                if module.check_mode:
+                    result["msg"] = f"Would have started app {app_name}"
+                    result["changed"] = True
+                else:
+                    try:
+                        mw.job("app.start", app_name)
+                        result["changed"] = True
+                        result["msg"] = f"Started app {app_name}"
+                    except Exception as e:
+                        module.fail_json(msg=f"Error starting app {app_name}: {e}")
+
+        elif state == "stopped":
+            if not is_running:
+                result["msg"] = f"App {app_name} is already stopped"
+                result["changed"] = False
+            else:
+                if module.check_mode:
+                    result["msg"] = f"Would have stopped app {app_name}"
+                    result["changed"] = True
+                else:
+                    try:
+                        mw.job("app.stop", app_name)
+                        result["changed"] = True
+                        result["msg"] = f"Stopped app {app_name}"
+                    except Exception as e:
+                        module.fail_json(msg=f"Error stopping app {app_name}: {e}")
+
+        elif state == "restarted":
+            # Always restart regardless of current state
+            if module.check_mode:
+                result["msg"] = f"Would have restarted app {app_name}"
+                result["changed"] = True
+            else:
+                try:
+                    # Stop if running
+                    if is_running:
+                        mw.job("app.stop", app_name)
+                    # Always start (even if was already stopped)
+                    mw.job("app.start", app_name)
+                    result["changed"] = True
+                    result["msg"] = f"Restarted app {app_name}"
+                except Exception as e:
+                    module.fail_json(msg=f"Error restarting app {app_name}: {e}")
+
+        elif state == "reloaded":
+            # Reload if running, start if stopped
+            if module.check_mode:
+                result["msg"] = f"Would have reloaded/started app {app_name}"
+                result["changed"] = True
+            else:
+                try:
+                    if is_running:
+                        # For containers, restart is equivalent to reload
+                        mw.job("app.stop", app_name)
+                        mw.job("app.start", app_name)
+                        result["changed"] = True
+                        result["msg"] = f"Reloaded app {app_name}"
+                    else:
+                        mw.job("app.start", app_name)
+                        result["changed"] = True
+                        result["msg"] = f"Started app {app_name} (was stopped)"
+                except Exception as e:
+                    module.fail_json(msg=f"Error reloading app {app_name}: {e}")
 
     module.exit_json(**result)
 
