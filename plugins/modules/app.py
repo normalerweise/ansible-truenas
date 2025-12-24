@@ -330,13 +330,18 @@ def main():
                     custom_compose_config_string
                 )
 
-            # Check if update is needed by comparing compose config
+            # Check if update is needed by comparing configuration
             needs_update = False
             if custom_app:
                 # For custom apps, check if compose config changed
                 existing_compose = existing_app.get("custom_compose_config_string", "")
                 new_compose = custom_compose_config_string or ""
                 if existing_compose != new_compose:
+                    needs_update = True
+            else:
+                # For catalog apps, always update when values are provided
+                # TrueNAS will determine if actual changes are needed
+                if values is not None:
                     needs_update = True
 
             if needs_update:
