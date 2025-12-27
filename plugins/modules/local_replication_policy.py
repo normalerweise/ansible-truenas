@@ -651,6 +651,7 @@ def main():
     # Generate name if not provided
     if not name:
         name = TaskNameGenerator.generate_name(source_dataset)
+        module.params["name"] = name
 
     # Validate parameters
     if state == "present":
