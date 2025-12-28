@@ -83,7 +83,6 @@ EXAMPLES = """
 - name: Delete an init script
   initscript:
     name: Remove old cruft
-    name: Start Foo
     state: absent
 """
 

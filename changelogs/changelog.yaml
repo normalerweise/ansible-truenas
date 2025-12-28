@@ -1,294 +1,269 @@
-ancestor: null
+---
+ancestor:
 releases:
   1.10.0:
     changes:
       minor_changes:
-      - Added initscript module, to manage init/shutdown scripts.
+        - Added initscript module, to manage init/shutdown scripts.
     fragments:
-    - initscripts.yml
+      - initscripts.yml
     modules:
-    - description: Manage init/shutdown scripts.
-      name: initscript
-      namespace: ''
-    release_date: '2025-02-20'
+      - description: Manage init/shutdown scripts.
+        name: initscript
+        namespace: ""
+    release_date: "2025-02-20"
   1.10.1:
     changes:
       bugfixes:
-      - Better error-handling. Try to recognize when the caller has invoked a nonexistent
-        function, as opposed to some other error.
+        - Better error-handling. Try to recognize when the caller has invoked a nonexistent function, as opposed to some other error.
       minor_changes:
-      - Better tolerance for error in setup. If some fact isn't defined, try to carry
-        on.
-      release_summary: Fix setup failing due to differences between TrueNAS CORE and
-        SCALE.
+        - Better tolerance for error in setup. If some fact isn't defined, try to carry on.
+      release_summary: Fix setup failing due to differences between TrueNAS CORE and SCALE.
     fragments:
-    - setup.yaml
-    release_date: '2025-05-06'
+      - setup.yaml
+    release_date: "2025-05-06"
   1.11.0:
     changes:
       major_changes:
-      - 'filesystem: Fill in the missing options.'
-      - 'filesystem: Major rewrite.'
+        - "filesystem: Fill in the missing options."
+        - "filesystem: Major rewrite."
     fragments:
-    - filesystem.yaml
-    release_date: '2025-05-16'
+      - filesystem.yaml
+    release_date: "2025-05-16"
   1.11.4:
     changes:
       bugfixes:
-      - 'filesystem: Fix docstring to parse as valid YAML.'
+        - "filesystem: Fix docstring to parse as valid YAML."
       minor_changes:
-      - Accept lower-case versions of the 'type' argument.
-      - The 'volsize' parameter takes a human-friendly size string like '64MB'.
-      - 'filesystem: create_ancestors doesn''t work in TrueNAS CORE. Ignore it, for
-        compatibility.'
-      release_summary: Small changes to make the filesystem module easier to work
-        with.
+        - Accept lower-case versions of the 'type' argument.
+        - The 'volsize' parameter takes a human-friendly size string like '64MB'.
+        - "filesystem: create_ancestors doesn't work in TrueNAS CORE. Ignore it, for compatibility."
+      release_summary: Small changes to make the filesystem module easier to work with.
     fragments:
-    - filesystem-core.yaml
-    - filesystem-doc.yaml
-    - filesystem-type.yaml
-    - volsize.yaml
-    release_date: '2025-05-30'
+      - filesystem-core.yaml
+      - filesystem-doc.yaml
+      - filesystem-type.yaml
+      - volsize.yaml
+    release_date: "2025-05-30"
   1.11.5:
     changes:
       bugfixes:
-      - Typo in command-line option for 'midclt', which prevented it from launching
-        jobs.
+        - Typo in command-line option for 'midclt', which prevented it from launching jobs.
       release_summary: Bug fix.
     fragments:
-    - midclt.yaml
-    release_date: '2025-06-11'
+      - midclt.yaml
+    release_date: "2025-06-11"
   1.11.6:
     changes:
       minor_changes:
-      - Can now change the name of an SMB share.
+        - Can now change the name of an SMB share.
     fragments:
-    - pr27.yaml
-    release_date: '2025-07-02'
+      - pr27.yaml
+    release_date: "2025-07-02"
   1.12.0:
     changes:
       major_changes:
-      - Added the ``certificate_authority`` and ``certificate`` modules.
+        - Added the ``certificate_authority`` and ``certificate`` modules.
     fragments:
-    - certs.yaml
+      - certs.yaml
     modules:
-    - description: Manage host certificates.
-      name: certificate
-      namespace: ''
-    - description: Manage Certificate Authorities.
-      name: certificate_authority
-      namespace: ''
-    release_date: '2025-08-20'
+      - description: Manage host certificates.
+        name: certificate
+        namespace: ""
+      - description: Manage Certificate Authorities.
+        name: certificate_authority
+        namespace: ""
+    release_date: "2025-08-20"
   1.12.1:
     changes:
       bugfixes:
-      - In the ``group`` module, the ``non_unique`` option is ignored in versions
-        of TrueNAS where it is not supported (SCALE 24.10 and above). ``non_unique``
-        is still used in CORE. (https://github.com/arensb/ansible-truenas/pull/38/)
-      release_summary: 'Bug fix: deal with unsupported option.'
+        - In the ``group`` module, the ``non_unique`` option is ignored in versions of TrueNAS where it is not supported (SCALE 24.10 and above). ``non_unique``
+          is still used in CORE. (https://github.com/arensb/ansible-truenas/pull/38/)
+      release_summary: "Bug fix: deal with unsupported option."
     fragments:
-    - dup-gid.yaml
-    release_date: '2025-08-21'
+      - dup-gid.yaml
+    release_date: "2025-08-21"
   1.13.0:
     changes:
       major_changes:
-      - '``middleware_method: client`` now works in TrueNAS SCALE.'
-      release_summary: Client access method works on SCALE. Some behind-the-scenes
-        changes.
+        - "``middleware_method: client`` now works in TrueNAS SCALE."
+      release_summary: Client access method works on SCALE. Some behind-the-scenes changes.
     fragments:
-    - client.yaml
-    - import.yaml
-    release_date: '2025-08-26'
+      - client.yaml
+      - import.yaml
+    release_date: "2025-08-26"
   1.13.1:
     changes:
       bugfixes:
-      - '``sharing_nfs`` module wouldn''t run under SCALE 25.04.'
+        - "``sharing_nfs`` module wouldn't run under SCALE 25.04."
     fragments:
-    - pr39-nfs.yaml
-    release_date: '2025-09-05'
+      - pr39-nfs.yaml
+    release_date: "2025-09-05"
   1.14.3:
     changes:
       bugfixes:
-      - 'CORE: ``filesystem`` longer complains about ``create_ancestors`` option when
-        it wasn''t even specified.'
-      - Couldn't create a user with a disabled password in SCALE.
-      - Fixed bug that prevented creating groups in SCALE.
+        - "CORE: ``filesystem`` longer complains about ``create_ancestors`` option when it wasn't even specified."
+        - Couldn't create a user with a disabled password in SCALE.
+        - Fixed bug that prevented creating groups in SCALE.
       major_changes:
-      - A new role, ``macbackups``, allows setting up a volume for MacOS Time Machine
-        backups.
-      - In ``filesystem``, ``comment`` is now ``comments``.
+        - A new role, ``macbackups``, allows setting up a volume for MacOS Time Machine backups.
+        - In ``filesystem``, ``comment`` is now ``comments``.
       release_summary: Some bug fixes. A new role to set up Time Machine backups.
-    release_date: '2025-11-08'
+    release_date: "2025-11-08"
   1.4.5:
     changes:
       breaking_changes:
-      - The C(sudo) and C(sudo_nopasswd) options are deprecated.
+        - The C(sudo) and C(sudo_nopasswd) options are deprecated.
       bugfixes:
-      - user module sudo variables didn't work with recent versions of TrueNAS SCALE.
+        - user module sudo variables didn't work with recent versions of TrueNAS SCALE.
       deprecated_features:
-      - In the user module, C(sudo) and C(sudo_nopasswd) options are deprecated. The
-        C(sudo_commands) and C(sudo_commands_nopasswd) options are the preferred way
-        to specify sudo permissions.
+        - In the user module, C(sudo) and C(sudo_nopasswd) options are deprecated. The C(sudo_commands) and C(sudo_commands_nopasswd) options are the preferred
+          way to specify sudo permissions.
       release_summary: Fix the way sudo is handled for users.
-    release_date: '2023-06-20'
+    release_date: "2023-06-20"
   1.5.0:
     changes:
       major_changes:
-      - Added the C(pool_snapshot_task) module, which manages periodic snapshot tasks
-        for ZFS volumes.
+        - Added the C(pool_snapshot_task) module, which manages periodic snapshot tasks for ZFS volumes.
       release_summary: add ZFS snapshot tasks
-    release_date: '2023-06-23'
+    release_date: "2023-06-23"
   1.5.1:
     changes:
       minor_changes:
-      - Fix formatting in docstrings, so docs should generate better now.
+        - Fix formatting in docstrings, so docs should generate better now.
       release_summary: fix docstrings
-    release_date: '2023-06-23'
+    release_date: "2023-06-23"
   1.5.2:
-    release_date: '2023-07-01'
+    release_date: "2023-07-01"
   1.6.0:
     changes:
       major_changes:
-      - For now, the old behavior is still the default. To use the new behavior, set
-        the "middleware_method" environment variable to "client", at either the play,
-        block, or task level, using the "environment:" Ansible directive.
-      - The default behavior will be switched from "midclt" to "client" in a later
-        version.
-      - Up until now, these modules have been invoking the 'midclt' utility on the
-        TrueNAS client to communicate with the middleware daemon. But that is implemented
-        using a Python module. This release makes it possible to use that Python module
-        directly, resulting in a significant speed improvement (as well as simpler
-        code).
+        - For now, the old behavior is still the default. To use the new behavior, set the "middleware_method" environment variable to "client", at either the
+          play, block, or task level, using the "environment:" Ansible directive.
+        - The default behavior will be switched from "midclt" to "client" in a later version.
+        - Up until now, these modules have been invoking the 'midclt' utility on the TrueNAS client to communicate with the middleware daemon. But that is
+          implemented using a Python module. This release makes it possible to use that Python module directly, resulting in a significant speed improvement (as
+          well as simpler code).
       release_summary: Use native client code on the TrueNAS machine.
-    release_date: '2023-07-03'
+    release_date: "2023-07-03"
   1.6.2:
     changes:
       minor_changes:
-      - Add auto-generated CHANGELOG.html
-      - Add online documentation.
-    release_date: '2023-07-16'
+        - Add auto-generated CHANGELOG.html
+        - Add online documentation.
+    release_date: "2023-07-16"
   1.7.0:
     changes:
       major_changes:
-      - Add the 'truenas_facts' module, for gathering Ansible facts about TrueNAS
-        systems.
+        - Add the 'truenas_facts' module, for gathering Ansible facts about TrueNAS systems.
       minor_changes:
-      - Add C(version_added) to each module's documentation.
-      - 'Link to the online documentation in README.md, where it''ll be visible
-
-        from both github and Ansible Galaxy.
-
-        '
+        - Add C(version_added) to each module's documentation.
+        - "Link to the online documentation in README.md, where it'll be visible\nfrom both github and Ansible Galaxy.\n"
     fragments:
-    - ongoing.yaml
-    - version_added.yaml
+      - ongoing.yaml
+      - version_added.yaml
     modules:
-    - description: Gather TrueNAS-related facts
-      name: truenas_facts
-      namespace: ''
+      - description: Gather TrueNAS-related facts
+        name: truenas_facts
+        namespace: ""
   1.7.1:
     changes:
       bugfixes:
-      - In 'service', services weren't actually being enabled/disabled, or started/stopped.
+        - In 'service', services weren't actually being enabled/disabled, or started/stopped.
   1.7.2:
     changes:
       bugfixes:
-      - Remove an unneeded, undocumented, and confusing result value.
+        - Remove an unneeded, undocumented, and confusing result value.
       minor_changes:
-      - Flesh out instructions for building a release.
+        - Flesh out instructions for building a release.
     fragments:
-    - build-release.yaml
+      - build-release.yaml
   1.8.0:
     changes:
       minor_changes:
-      - Added the `pool_scrub_task` plugin, to schedule zfs pool scrub tasks.
-      - Added the `smart_test_task` plugin, to schedule S.M.A.R.T. disk tests.
-      - Added the `smart` plugin, to manage the S.M.A.R.T. service.
+        - Added the `pool_scrub_task` plugin, to schedule zfs pool scrub tasks.
+        - Added the `smart_test_task` plugin, to schedule S.M.A.R.T. disk tests.
+        - Added the `smart` plugin, to manage the S.M.A.R.T. service.
       release_summary: Added several new modules.
     modules:
-    - description: Schedule periodic scrub of ZFS pools.
-      name: pool_scrub_task
-      namespace: ''
-    - description: Configure S.M.A.R.T. service
-      name: smart
-      namespace: ''
-    - description: Schedule S.M.A.R.T. tests
-      name: smart_test_task
-      namespace: ''
-    release_date: '2023-09-11'
+      - description: Schedule periodic scrub of ZFS pools.
+        name: pool_scrub_task
+        namespace: ""
+      - description: Configure S.M.A.R.T. service
+        name: smart
+        namespace: ""
+      - description: Schedule S.M.A.R.T. tests
+        name: smart_test_task
+        namespace: ""
+    release_date: "2023-09-11"
   1.8.1:
     changes:
       bugfixes:
-      - '`plugin` result wasn''t always being returned.'
+        - "`plugin` result wasn't always being returned."
       minor_changes:
-      - Fix documentation.
+        - Fix documentation.
       release_summary: Mostly bug fixes.
     fragments:
-    - plugin.yml
-    release_date: '2023-12-10'
+      - plugin.yml
+    release_date: "2023-12-10"
   1.9.0:
     changes:
       bugfixes:
-      - '`plugin` module: Wait until plugin has finished installing before returning.'
+        - "`plugin` module: Wait until plugin has finished installing before returning."
       major_changes:
-      - Added the `jail_fstab` module, to manage filesystems in jails.
+        - Added the `jail_fstab` module, to manage filesystems in jails.
       minor_changes:
-      - Expand documentation. Include some more common use cases.
+        - Expand documentation. Include some more common use cases.
     fragments:
-    - jail_fstab.yml
-    - plugin.yml
+      - jail_fstab.yml
+      - plugin.yml
     modules:
-    - description: Manage a jail's fstab
-      name: jail_fstab
-      namespace: ''
-    release_date: '2023-12-10'
+      - description: Manage a jail's fstab
+        name: jail_fstab
+        namespace: ""
+    release_date: "2023-12-10"
   1.9.1:
     changes:
       bugfixes:
-      - TrueNAS SCALE doesn't allow enabling SMB access on users without a password.
-        'smb' used to default to true, which prevented creating users with password
-        disabled. The 'smb' argument can now be set explicitly.
+        - TrueNAS SCALE doesn't allow enabling SMB access on users without a password. 'smb' used to default to true, which prevented creating users with
+          password disabled. The 'smb' argument can now be set explicitly.
       major_changes:
-      - Add user "smb" parameter to control SMB access.
+        - Add user "smb" parameter to control SMB access.
       release_summary: Bug fix.
     fragments:
-    - user.yml
-    release_date: '2024-05-06'
+      - user.yml
+    release_date: "2024-05-06"
   1.9.2:
     changes:
       bugfixes:
-      - TrueNAS CORE and SCALE have different flags for NFS versions 3 and 4. SCALE
-        allows turning each one on and off independently. CORE only supports this
-        for v4. This change updates the nfs module to enable each protocol separately,
-        where possible.
+        - TrueNAS CORE and SCALE have different flags for NFS versions 3 and 4. SCALE allows turning each one on and off independently. CORE only supports this
+          for v4. This change updates the nfs module to enable each protocol separately, where possible.
       release_summary: Support NFSv4 under TrueNAS SCALE
     fragments:
-    - nfsv4.yml
-    release_date: '2024-05-17'
+      - nfsv4.yml
+    release_date: "2024-05-17"
   1.9.3:
     changes:
       bugfixes:
-      - There was a bug preventing people from exporting NFS filesystems read-only.
-        This is fixed. Patch submitted by Steve Ellis.
+        - There was a bug preventing people from exporting NFS filesystems read-only. This is fixed. Patch submitted by Steve Ellis.
       release_summary: Bug fix for read-only NFS exports.
     fragments:
-    - sharing_nfs.yml
-    release_date: '2024-05-17'
+      - sharing_nfs.yml
+    release_date: "2024-05-17"
   1.9.4:
     changes:
       bugfixes:
-      - Error setting NFS export read-only flag.
-      - Error setting ZFS filesystem description.
+        - Error setting NFS export read-only flag.
+        - Error setting ZFS filesystem description.
       release_summary: Bug fixes.
     fragments:
-    - sharing-nfs.yml
-    release_date: '2024-05-17'
+      - sharing-nfs.yml
+    release_date: "2024-05-17"
   1.9.5:
     changes:
       bugfixes:
-      - The ``pool_scrub_task`` module would crash when invoked with a nonexistent
-        pool name. Fix contributed by bmarinov.
+        - The ``pool_scrub_task`` module would crash when invoked with a nonexistent pool name. Fix contributed by bmarinov.
       release_summary: bug fix
     fragments:
-    - pool-scrub-json.yaml
-    release_date: '2024-05-29'
+      - pool-scrub-json.yaml
+    release_date: "2024-05-29"
