@@ -299,6 +299,71 @@ class TierMatcher:
             )
         return True
 
+    @staticmethod
+    def get_most_frequent_tier(tiers_dict):
+        """Get the most frequent tier from the tiers dict.
+
+        Args:
+            tiers_dict: Dict mapping tier names to retention counts
+
+        Returns:
+            Name of the most frequent tier
+
+        Raises:
+            ValueError if tiers_dict is empty
+        """
+        if not tiers_dict:
+            raise ValueError("tiers_dict cannot be empty")
+
+        # Define tier order by frequency (most frequent first)
+        tier_order = ["frequent", "hourly", "daily", "weekly", "monthly", "yearly"]
+
+        # Find the most frequent tier present in tiers_dict
+        for tier in tier_order:
+            if tier in tiers_dict:
+                return tier
+
+        # If none of the standard tiers found, return first key
+        return list(tiers_dict.keys())[0]
+
+    @staticmethod
+    def get_longest_retention_tier(tiers_dict):
+        """Get the tier with the longest retention period.
+
+        Args:
+            tiers_dict: Dict mapping tier names to retention counts
+
+        Returns:
+            Tuple of (tier_name, retention_count)
+
+        Raises:
+            ValueError if tiers_dict is empty
+        """
+        if not tiers_dict:
+            raise ValueError("tiers_dict cannot be empty")
+
+        # Conversion factors to hours for comparison
+        unit_to_hours = {
+            "HOUR": 1,
+            "DAY": 24,
+            "WEEK": 24 * 7,
+            "MONTH": 24 * 30,  # Approximation
+            "YEAR": 24 * 365,  # Approximation
+        }
+
+        longest_tier = None
+        longest_hours = 0
+
+        for tier_name, count in tiers_dict.items():
+            unit = TierMatcher.get_tier_lifetime_unit(tier_name)
+            total_hours = count * unit_to_hours.get(unit, 0)
+
+            if total_hours > longest_hours:
+                longest_hours = total_hours
+                longest_tier = tier_name
+
+        return longest_tier, tiers_dict[longest_tier]
+
 
 class TaskNameGenerator:
     """Generates and validates replication task names."""
@@ -485,6 +550,16 @@ class RemoteReplicationPolicyManager:
         # Build lifetimes array
         lifetimes = self._build_lifetimes(tiers)
 
+        # Determine replication schedule from most frequent tier
+        most_frequent_tier = TierMatcher.get_most_frequent_tier(tiers)
+        replication_schedule = TierMatcher.get_tier_schedule(most_frequent_tier)
+
+        # Determine simple retention fields from longest retention tier
+        # API requires these even when using lifetimes array
+        longest_tier, longest_count = TierMatcher.get_longest_retention_tier(tiers)
+        simple_lifetime_value = longest_count
+        simple_lifetime_unit = TierMatcher.get_tier_lifetime_unit(longest_tier)
+
         # Build encryption config
         encryption_config = EncryptionConfigBuilder.build_config(
             params["preserve_source_encryption"],
@@ -505,7 +580,10 @@ class RemoteReplicationPolicyManager:
             "recursive": recursive,
             "naming_schema": naming_schemas,
             "auto": True,
+            "schedule": replication_schedule,
             "retention_policy": "CUSTOM",
+            "lifetime_value": simple_lifetime_value,  # Set to longest tier
+            "lifetime_unit": simple_lifetime_unit,
             "lifetimes": lifetimes,
             "readonly": "SET",
             "enabled": True,
@@ -588,13 +666,12 @@ class RemoteReplicationPolicyManager:
         """
         lifetimes = []
         for tier_name, count in tiers_dict.items():
-            lifetimes.append(
-                {
-                    "schedule": TierMatcher.get_tier_schedule(tier_name),
-                    "lifetime_value": count,
-                    "lifetime_unit": TierMatcher.get_tier_lifetime_unit(tier_name),
-                }
-            )
+            lifetime_entry = {
+                "schedule": TierMatcher.get_tier_schedule(tier_name),
+                "lifetime_value": count,
+                "lifetime_unit": TierMatcher.get_tier_lifetime_unit(tier_name),
+            }
+            lifetimes.append(lifetime_entry)
         return lifetimes
 
 
@@ -648,6 +725,7 @@ def main():
     # Generate name if not provided
     if not name:
         name = TaskNameGenerator.generate_name(source_dataset)
+        module.params["name"] = name
 
     # Validate parameters
     if state == "present":
