@@ -18,16 +18,12 @@ __metaclass__ = type
 # deemed to be an error.
 
 # XXX
-DOCUMENTATION = '''
+DOCUMENTATION = """
 ---
 module: truenas_facts
 short_description: Gather TrueNAS-related facts
 description:
-  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
-abstraction_level: L1
-abstraction_type: direct_api
-  - Gather facts about a TrueNAS host, in the same way as
-    C(setup) does.
+  - Gather facts about a TrueNAS host, in the same way as C(setup) does.
   - Any facts discovered by this module will be mixed in with those
     discovered by other modules such as C(setup).
   - See U(https://docs.ansible.com/ansible/latest/reference_appendices/config.html#facts-modules)
@@ -43,6 +39,9 @@ abstraction_type: direct_api
   - |
     This module may be used on non-TrueNAS hosts: it should simply fail
     gracefully and do nothing.
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
 notes:
   - Supports C(check_mode).
   - Should run correctly on non-TrueNAS hosts.
@@ -51,9 +50,9 @@ seealso:
   - name: Ansible Configuration Settings
     description: Configure which fact-gathering modules to use.
     link: https://docs.ansible.com/ansible/latest/reference_appendices/config.html#facts-modules
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = """
 - name: Manually gather information
   collections: arensb.truenas
   hosts: myhost
@@ -62,9 +61,9 @@ EXAMPLES = '''
       arensb.truenas.truenas_facts:
     # ansible_facts should have TrueNAS facts mixed in with the usual ones.
     - debug: var=ansible_facts
-'''
+"""
 
-RETURN = '''
+RETURN = """
 ansible_facts.truenas_boot_id:
   description:
     - The host's unique boot identifier. Changes every time the
@@ -165,12 +164,13 @@ ansible_facts.truenas_build_time:
       converted to a string by the time it gets to the Ansible client.
   type: str
   sample: 2023-05-29T06:50:20
-'''
+"""
+
+from datetime import datetime
 
 from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.exceptions \
-    import MethodNotFoundError as AnsibleMethodNotFoundError
-from datetime import datetime
+
+from ...module_utils.exceptions import MethodNotFoundError as AnsibleMethodNotFoundError
 
 
 def main():
@@ -181,7 +181,7 @@ def main():
 
     result = dict(
         changed=False,
-        msg='',
+        msg="",
         ansible_facts=dict(),
     )
 
@@ -189,10 +189,10 @@ def main():
         # We don't actually expect this to fail, since the MiddleWare
         # module comes with this module, and should therefore be
         # available everywhere.
-        from ..module_utils.middleware import MiddleWare as MW
+        from ...module_utils.middleware import MiddleWare as MW
     except ImportError as e:
-        result['msg'] = f"Can't load required module: {e}"
-        result['skipped'] = True
+        result["msg"] = f"Can't load required module: {e}"
+        result["skipped"] = True
         module.exit_json(**result)
 
     # Creating a MiddleWare client can fail if the TrueNAS-related
@@ -200,30 +200,32 @@ def main():
     try:
         mw = MW.client()
     except ModuleNotFoundError as e:
-        result['msg'] = f'Got module not found exeption {e}'
-        result['skipped'] = True
+        result["msg"] = f"Got module not found exeption {e}"
+        result["skipped"] = True
         module.exit_json(**result)
     except FileNotFoundError as e:
-        result['msg'] = f'Got file not found exeption {e}'
-        result['skipped'] = True
+        result["msg"] = f"Got file not found exeption {e}"
+        result["skipped"] = True
         module.exit_json(**result)
 
     try:
-        result['ansible_facts']['truenas_boot_id'] = \
-            mw.call("system.boot_id", output='str')
-        result['ansible_facts']['truenas_host_id'] = \
-            mw.call("system.host_id", output='str')
+        result["ansible_facts"]["truenas_boot_id"] = mw.call(
+            "system.boot_id", output="str"
+        )
+        result["ansible_facts"]["truenas_host_id"] = mw.call(
+            "system.host_id", output="str"
+        )
 
         # Get the product type first, so that we can decide whether to
         # print error messages or not.
-        product_type = mw.call("system.product_type", output='str')
-        result['ansible_facts']['truenas_product_type'] = \
-            product_type
+        product_type = mw.call("system.product_type", output="str")
+        result["ansible_facts"]["truenas_product_type"] = product_type
 
         # system.product_name doesn't exist on SCALE (anymore).
         try:
-            result['ansible_facts']['truenas_product_name'] = \
-                mw.call("system.product_name", output='str')
+            result["ansible_facts"]["truenas_product_name"] = mw.call(
+                "system.product_name", output="str"
+            )
         except AnsibleMethodNotFoundError:
             # We expect this to fail on TrueNAS SCALE, but not CORE.
             if product_type == "CORE":
@@ -235,8 +237,9 @@ def main():
 
         # system.environment doesn't exist on SCALE (anymore).
         try:
-            result['ansible_facts']['truenas_environment'] = \
-                mw.call("system.environment", output='str')
+            result["ansible_facts"]["truenas_environment"] = mw.call(
+                "system.environment", output="str"
+            )
         except AnsibleMethodNotFoundError:
             # We expect this to fail on TrueNAS SCALE, but not CORE.
             if product_type == "CORE":
@@ -246,10 +249,8 @@ def main():
             module.warn(f"Error looking up environment: {e}")
             raise
 
-        result['ansible_facts']['truenas_state'] = \
-            mw.call("system.state", output='str')
-        result['ansible_facts']['truenas_system_info'] = \
-            mw.call("system.info")
+        result["ansible_facts"]["truenas_state"] = mw.call("system.state", output="str")
+        result["ansible_facts"]["truenas_system_info"] = mw.call("system.info")
 
         # The build time is a timestamp, but it's returned in different
         # ways by different middlewared APIs.
@@ -261,26 +262,27 @@ def main():
         if isinstance(build_time, datetime):
             # The direct Python connection to middlewared returns
             # a datetime.datetime object, so just return that.
-            result['ansible_facts']['truenas_build_time'] = build_time
-        elif isinstance(build_time, dict) and '$date' in build_time:
+            result["ansible_facts"]["truenas_build_time"] = build_time
+        elif isinstance(build_time, dict) and "$date" in build_time:
             # 'midclt' returns a dict of the form
             #   {"$date": 1234567890000}
             # which is the number of milliseconds since the epoch.
             # Convert that to a datetime.
-            result['ansible_facts']['truenas_build_time'] = \
-                datetime.fromtimestamp(build_time['$date']/1000)
+            result["ansible_facts"]["truenas_build_time"] = datetime.fromtimestamp(
+                build_time["$date"] / 1000
+            )
         else:
             # This is unexpected. Add a warning message, return the
             # supplied value, and hope for the best.
-            module.warn(f'Unexpected type or build_time: {type(build_time)}.')
-            result['ansible_facts']['truenas_build_time'] = build_time
+            module.warn(f"Unexpected type or build_time: {type(build_time)}.")
+            result["ansible_facts"]["truenas_build_time"] = build_time
 
         # Get the set of features and whether they're enabled.
-        result['truenas_features'] = {}
-        for feat in ('DEDUP', 'FIBRECHANNEL', 'JAILS', 'VM'):
+        result["truenas_features"] = {}
+        for feat in ("DEDUP", "FIBRECHANNEL", "JAILS", "VM"):
             try:
-                feat_set = mw.call("system.feature_enabled", feat, output='str')
-                result['truenas_features'][feat] = feat_set
+                feat_set = mw.call("system.feature_enabled", feat, output="str")
+                result["truenas_features"][feat] = feat_set
             except Exception as e:
                 # SCALE doesn't have "JAILS". This is expected, so
                 # don't throw an error.
@@ -289,8 +291,8 @@ def main():
                 else:
                     module.warn(f"Error looking up feature {feat}: {e}")
     except Exception as e:
-        result['skipped'] = True
-        result['msg'] = f"Error looking up facts: {e}"
+        result["skipped"] = True
+        result["msg"] = f"Error looking up facts: {e}"
         module.exit_json(**result)
 
     module.exit_json(**result)
