@@ -7,6 +7,9 @@ DOCUMENTATION = r"""
 module: app
 short_description: Manage TrueNAS SCALE applications
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Create, manage, and delete applications on TrueNAS SCALE.
   - Supports both catalog apps and custom Docker Compose applications.
   - Uses the modern app.create/update/delete API methods.

@@ -7,6 +7,9 @@ DOCUMENTATION = '''
 module: smart
 short_description: Configure S.M.A.R.T. service
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Configure the S.M.A.R.T. service.
   - To turn on the S.M.A.R.T. service and make sure it starts
     at boot time, see C(service).

@@ -7,6 +7,9 @@ DOCUMENTATION = '''
 module: nfs
 short_description: Configure NFS service
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Configure the NFS service.
   - For individual NFS exports, see C(sharing_nfs)
 options:

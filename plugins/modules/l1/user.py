@@ -19,6 +19,10 @@ module: user
 short_description: Manage user accounts
 description:
   - Add, change, and delete user accounts.
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+  - Direct wrapper around TrueNAS user.create/update/delete API endpoints.
+abstraction_level: L1
+abstraction_type: direct_api
 options:
   append:
     description:

@@ -9,6 +9,9 @@ DOCUMENTATION = '''
 module: pool_snapshot_task
 short_description: Maintain periodic disk pool snapshot tasks.
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Creates, deletes, and configures disk pool snapshot tasks.
 options:
   allow_empty:

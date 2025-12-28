@@ -14,6 +14,9 @@ module: group
 short_description: Manage groups
 description:
   - Create, destroy, and manage groups on a TrueNAS host.
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
 options:
   name:
     description:

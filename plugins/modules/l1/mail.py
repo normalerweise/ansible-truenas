@@ -9,6 +9,9 @@ DOCUMENTATION = '''
 module: mail
 short_description: Manage TrueNAS email settings
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Configure how TrueNAS sends mail.
 options:
   from_email:

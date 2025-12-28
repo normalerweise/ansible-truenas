@@ -14,6 +14,13 @@ description:
   - Runs on destination machine, pulls from remote source.
   - One replication task manages all specified tiers for a dataset.
   - Requires SSH credentials configured in keychain.
+  - This is a Level 3 (L3) module that orchestrates multiple resources as a cohesive policy.
+abstraction_level: L3
+abstraction_type: pattern_orchestration
+related_modules:
+  - normalerweise.truenas.l1.replication for managing individual replication tasks
+  - normalerweise.truenas.l2.keychaincredential for managing SSH credentials
+  - normalerweise.truenas.l3.pool_snapshot_policy for managing snapshot policies
 options:
   name:
     description:

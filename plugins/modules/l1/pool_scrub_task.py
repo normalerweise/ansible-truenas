@@ -7,6 +7,9 @@ DOCUMENTATION = '''
 module: pool_scrub_task
 short_description: Schedule periodic scrub of ZFS pools.
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Schedule periodic ZFS pool scrub tasks.
 options:
   description:

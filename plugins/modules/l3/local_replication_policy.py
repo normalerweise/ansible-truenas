@@ -13,6 +13,12 @@ description:
   - Creates push-based replication tasks that replicate snapshots to different pools on the same machine.
   - Automatically binds to snapshot tasks for specified tiers.
   - One replication task manages all specified tiers for a dataset.
+  - This is a Level 3 (L3) module that orchestrates multiple resources as a cohesive policy.
+abstraction_level: L3
+abstraction_type: pattern_orchestration
+related_modules:
+  - normalerweise.truenas.l1.replication for managing individual replication tasks
+  - normalerweise.truenas.l3.pool_snapshot_policy for managing snapshot policies
 options:
   name:
     description:

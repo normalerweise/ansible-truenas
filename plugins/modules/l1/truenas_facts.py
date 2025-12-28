@@ -23,6 +23,9 @@ DOCUMENTATION = '''
 module: truenas_facts
 short_description: Gather TrueNAS-related facts
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Gather facts about a TrueNAS host, in the same way as
     C(setup) does.
   - Any facts discovered by this module will be mixed in with those

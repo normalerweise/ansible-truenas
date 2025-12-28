@@ -12,6 +12,9 @@ description:
   - Creates, updates, and deletes ZFS replication tasks in TrueNAS Scale.
   - Supports SSH and LOCAL transports (SSH+NETCAT is not implemented).
   - Push or pull replication with various retention policies.
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
 options:
   name:
     description:

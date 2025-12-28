@@ -13,6 +13,9 @@ description:
   - Supports SSH key pairs and SSH connection credentials.
   - SSH key pairs store public/private keys for authentication.
   - SSH connection credentials store complete SSH connection configuration including host, port, and authentication details.
+  - This is a Level 2 (L2) module that provides intent-based API access with type-aware normalization.
+abstraction_level: L2
+abstraction_type: intent_based
 options:
   name:
     description:

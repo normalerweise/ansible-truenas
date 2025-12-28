@@ -14,6 +14,9 @@ description:
   - Create, update, and delete ZFS datasets on TrueNAS using the middleware API.
   - Prevents sending null or invalid fields that cause errors.
   - Normalizes property values so that e.g. '64K' is treated the same as '65536'
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
     for volblocksize comparisons. If a user tries to change volblocksize or sparse
     on an existing volume, the module raises an error (since TrueNAS disallows it).
 options:

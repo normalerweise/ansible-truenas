@@ -1,4 +1,4 @@
-# Ansible Collection - arensb.truenas
+# Ansible Collection - normalerweise.truenas
 
 Manage a [TrueNAS](https://www.truenas.com/) machine.
 
@@ -11,8 +11,49 @@ to control the Middleware Daemon.
 
 It aims to be intuitive to use, and to avoid unpleasant surprises.
 
-See [the online documentation](https://arensb.github.io/truenas/index.html)
-for the list of included modules, and how to use them.
+## Module Organization
+
+This collection uses abstraction levels similar to AWS CDK to help you choose the right module for your needs:
+
+### L1 - Direct API (Low-Level Control)
+Located in `plugins/modules/l1/`
+
+Direct wrappers around TrueNAS middleware API. Use when you need fine-grained control over individual resources.
+
+**Usage:** `normalerweise.truenas.l1.<module>`
+
+**Examples:**
+- `normalerweise.truenas.l1.user` - Manage individual user accounts
+- `normalerweise.truenas.l1.filesystem` - Manage ZFS datasets
+- `normalerweise.truenas.l1.service` - Control TrueNAS services
+- `normalerweise.truenas.l1.sharing_smb` - Configure SMB shares
+
+### L2 - Intent-Based (Mid-Level)
+Located in `plugins/modules/l2/`
+
+Type-aware modules with intelligent defaults and normalization. Provides a balance between control and convenience.
+
+**Usage:** `normalerweise.truenas.l2.<module>`
+
+**Examples:**
+- `normalerweise.truenas.l2.keychaincredential` - Manage SSH credentials with type-aware validation
+
+### L3 - Pattern Orchestration (Recommended for Most Users)
+Located in `plugins/modules/l3/`
+
+High-level policy-driven modules that manage multiple resources as cohesive units. These modules automate complex workflows and follow best practices.
+
+**Usage:** `normalerweise.truenas.l3.<module>`
+
+**Examples:**
+- `normalerweise.truenas.l3.pool_snapshot_policy` - Tier-based snapshot retention (hourly: 24, daily: 30, etc.)
+- `normalerweise.truenas.l3.local_replication_policy` - Push replication with auto-discovery
+- `normalerweise.truenas.l3.remote_replication_policy` - Pull replication with tier-based retention
+
+**When to use each level:**
+- **L1**: When you need complete control over individual resources or when L3 modules don't cover your use case
+- **L2**: When you need type-specific features with some abstraction
+- **L3**: For most common use cases - these modules handle the complexity for you
 
 ## Installing this collection
 
@@ -23,27 +64,52 @@ The easiest way to install this collection is
 
 ## Examples
 
-    - name: Example tasks
-      collections:
-        - arensb.truenas
+### L1 - Direct API Examples
+
+    - name: Example L1 tasks
       hosts: truenas-box
       become: yes
       tasks:
         - name: Set the hostname
-          hostname:
+          normalerweise.truenas.l1.hostname:
             name: new-hostname
+        
         - name: Turn on sshd
-          service:
-            name: sshd
+          normalerweise.truenas.l1.service:
+            name: ssh
+            enabled: true
+            state: started
+        
+        - name: Create a user
+          normalerweise.truenas.l1.user:
+            name: johndoe
+            comment: "John Doe"
+            group: users
 
-Note that since several of the module names are the same as builtin
-ones, you may want to use the full name to avoid confusion:
+### L3 - Policy Examples (Recommended)
 
-    - hosts: truenas-box
+    - name: Example L3 policy tasks
+      hosts: truenas-box
       become: yes
       tasks:
-        - arensb.truenas.hostname:
-            name: new-hostname
+        - name: Configure snapshot retention policy
+          normalerweise.truenas.l3.pool_snapshot_policy:
+            dataset: tank/data
+            snapshot_policy:
+              hourly: 24
+              daily: 7
+              weekly: 4
+              monthly: 12
+            state: present
+        
+        - name: Configure local replication
+          normalerweise.truenas.l3.local_replication_policy:
+            source_dataset: tank/data
+            target_dataset: backup/data
+            tiers:
+              - hourly
+              - daily
+            state: present
 
 ## Environment Variables
 

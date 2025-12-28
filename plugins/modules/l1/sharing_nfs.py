@@ -9,6 +9,9 @@ DOCUMENTATION = '''
 module: sharing_nfs
 short_description: Manage NFS sharing
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Create, manage, and delete NFS exports.
 options:
   alldirs:

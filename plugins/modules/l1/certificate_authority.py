@@ -18,6 +18,9 @@ DOCUMENTATION = '''
 module: certificate_authority
 short_description: Manage Certificate Authorities.
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Allows uploading and revoking CA certs. These CA certs are
     used as part of a key infrastructure to sign
     host certificates.

@@ -14,6 +14,11 @@ description:
     multi-tier retention policies (hourly, daily, weekly, monthly, yearly).
   - Provides strict synchronization ensuring snapshot tasks exactly match the policy.
   - Policy-managed tasks are identified by the 'auto-' prefix in naming schema.
+  - This is a Level 3 (L3) module that orchestrates multiple resources as a cohesive policy.
+abstraction_level: L3
+abstraction_type: pattern_orchestration
+related_modules:
+  - normalerweise.truenas.l1.pool_snapshot_task for managing individual snapshot tasks
 options:
   dataset:
     description:

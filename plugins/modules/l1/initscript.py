@@ -10,6 +10,9 @@ module: initscript
 short_description: Manage init/shutdown scripts.
 description:
   - Set up and manage init and shutdown scripts and commands.
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
 options:
   name:
     description:

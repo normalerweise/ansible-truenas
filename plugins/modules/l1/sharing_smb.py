@@ -11,6 +11,9 @@ short_description: Manage SMB sharing
 description:
   - Create, manage, and delete SMB shares on TrueNAS SCALE.
   - Uses the modern sharing.smb API with purpose-based configuration.
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
 options:
   name:
     description:

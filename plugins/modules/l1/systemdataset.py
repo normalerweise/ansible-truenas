@@ -10,6 +10,9 @@ DOCUMENTATION = '''
 module: systemdataset
 short_description: Manage the system dataset.
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Manage the system dataset, including migrating it from one
     pool to another.
 options:

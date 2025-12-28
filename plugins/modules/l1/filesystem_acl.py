@@ -11,6 +11,9 @@ description:
   - Set and manage NFSv4 or POSIX ACLs on TrueNAS SCALE filesystems.
   - Uses the filesystem.setacl middleware API.
   - Supports both NFSv4 and POSIX1E ACL types.
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
 options:
   path:
     description:

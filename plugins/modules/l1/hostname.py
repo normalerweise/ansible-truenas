@@ -15,6 +15,9 @@ module: hostname
 version_added: 0.1.0
 short_description: Set the hostname.
 description:
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
   - Set the hostname, as part of the host's network configuration.
   - Does not set the FQDN.
 options:

@@ -9,6 +9,9 @@ version_added: 0.1.0
 short_description: Configure TrueNAS general system settings.
 description:
   - Configure general system settings using the system.general.update API.
+  - This is a Level 1 (L1) module that provides direct API access to TrueNAS middleware.
+abstraction_level: L1
+abstraction_type: direct_api
 options:
   ui_port:
     description:
