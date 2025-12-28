@@ -199,7 +199,7 @@ EXAMPLES = """
   arensb.truenas.user:
     name: bob
     comment: "Bob the User"
-    create_group: yes
+    create_group: true
     password: "<encrypted password string>"
 
 - name: Create an ordinary user and put them into an existing group
@@ -214,7 +214,7 @@ EXAMPLES = """
     name: bob
     comment: "Bob the User"
     group: bobsgroup
-    password_disabled: yes
+    password_disabled: true
 
 - name: Delete a user
   arensb.truenas.user:
@@ -225,7 +225,7 @@ EXAMPLES = """
   arensb.truenas.user:
     name: bob
     state: absent
-    delete_group: no
+    delete_group: false
 """
 
 RETURN = """
