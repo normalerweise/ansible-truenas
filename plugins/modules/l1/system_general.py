@@ -29,6 +29,12 @@ options:
       - Must be a valid timezone from the tz database.
     type: str
     required: false
+  usage_collection:
+    description:
+      - Whether usage data collection is enabled.
+      - Set to false to disable sending usage statistics to iXsystems.
+    type: bool
+    required: false
 """
 
 EXAMPLES = """
@@ -46,6 +52,10 @@ EXAMPLES = """
     ui_port: 8080
     ui_httpsport: 4443
     timezone: "Europe/Berlin"
+
+- name: Disable usage collection
+  normalerweise.truenas.system_general:
+    usage_collection: false
 """
 
 RETURN = """
@@ -70,6 +80,7 @@ def main():
             ui_port=dict(type="int", required=False),
             ui_httpsport=dict(type="int", required=False),
             timezone=dict(type="str", required=False),
+            usage_collection=dict(type="bool", required=False),
         ),
         supports_check_mode=True,
     )
@@ -95,6 +106,8 @@ def main():
         update_params["ui_httpsport"] = module.params["ui_httpsport"]
     if module.params["timezone"] is not None:
         update_params["timezone"] = module.params["timezone"]
+    if module.params["usage_collection"] is not None:
+        update_params["usage_collection"] = module.params["usage_collection"]
 
     # If no parameters specified, nothing to do
     if not update_params:
