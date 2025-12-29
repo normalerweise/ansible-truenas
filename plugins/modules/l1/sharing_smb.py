@@ -376,6 +376,9 @@ def main():
                     processed_options = process_options(purpose, options)
                     if share_info.get("options") != processed_options:
                         arg["options"] = processed_options
+                        # TrueNAS API requires purpose to be set when options are set
+                        if "purpose" not in arg:
+                            arg["purpose"] = purpose
                 except Exception as e:
                     module.fail_json(msg=f"Error processing options: {e}")
 

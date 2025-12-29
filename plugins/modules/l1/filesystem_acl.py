@@ -252,22 +252,45 @@ def main():
     needs_change = True
     if not p["stripacl"]:
         # Compare ACLs (simplified - you might want deeper comparison)
-        if current_acl.get("acl") == dacl:
+        acl_matches = current_acl.get("acl") == dacl
+
+        # Check if ownership needs to change
+        ownership_matches = True
+        if p["user"] is not None and current_acl.get("user") != p["user"]:
+            ownership_matches = False
+        if p["uid"] is not None and current_acl.get("uid") != p["uid"]:
+            ownership_matches = False
+        if p["group"] is not None and current_acl.get("group") != p["group"]:
+            ownership_matches = False
+        if p["gid"] is not None and current_acl.get("gid") != p["gid"]:
+            ownership_matches = False
+
+        if acl_matches and ownership_matches:
             needs_change = False
 
     if not needs_change:
         result["acl_info"] = current_acl
+        result["debug_info"] = {
+            "reason": "no_change_needed",
+            "acl_params": acl_params,
+            "current_acl": current_acl,
+        }
         module.exit_json(**result)
 
     if module.check_mode:
         result["changed"] = True
         result["msg"] = f"Would set ACL on '{path}'"
+        result["debug_info"] = {"acl_params": acl_params}
         module.exit_json(**result)
 
     # Apply the ACL
     try:
-        # filesystem.setacl is an async job
-        updated_acl = mw.call("filesystem.setacl", acl_params)
+        # filesystem.setacl is an async job - must wait for completion
+        result["debug_info"] = {
+            "acl_params_sent": acl_params,
+            "current_state": current_acl,
+        }
+        updated_acl = mw.job("filesystem.setacl", acl_params)
         result["acl_info"] = updated_acl
         result["changed"] = True
 
