@@ -214,6 +214,96 @@ def validate_app_name(name):
     return True, None
 
 
+def _values_differ(existing, new):
+    """
+    Deep comparison of configuration values to detect changes.
+
+    Args:
+        existing: Existing configuration from TrueNAS (dict)
+        new: New configuration values (dict)
+
+    Returns:
+        bool: True if values differ and update is needed
+    """
+    # Handle None cases
+    if new is None:
+        return False
+    if existing is None:
+        return True
+
+    # Recursively compare dictionaries
+    if isinstance(new, dict):
+        for key, new_value in new.items():
+            existing_value = existing.get(key)
+
+            # Recursively check nested structures
+            if isinstance(new_value, (dict, list)):
+                if _values_differ(existing_value, new_value):
+                    return True
+            else:
+                # Direct comparison for primitive types
+                # Handle type coercion (e.g., "true" vs True, "1" vs 1)
+                if _normalize_value(existing_value) != _normalize_value(new_value):
+                    return True
+        return False
+
+    # Compare lists
+    elif isinstance(new, list):
+        if not isinstance(existing, list):
+            return True
+        if len(new) != len(existing):
+            return True
+
+        # Compare list elements
+        for i, new_item in enumerate(new):
+            if i >= len(existing):
+                return True
+            if _values_differ(existing[i], new_item):
+                return True
+        return False
+
+    # Primitive comparison
+    else:
+        return _normalize_value(existing) != _normalize_value(new)
+
+
+def _normalize_value(value):
+    """
+    Normalize values for comparison to handle type differences.
+
+    TrueNAS may return values in different types than what we send
+    (e.g., boolean as string, numbers as strings, etc.)
+    """
+    if value is None:
+        return None
+
+    # Convert booleans represented as strings
+    if isinstance(value, str):
+        if value.lower() in ("true", "yes", "1"):
+            return True
+        elif value.lower() in ("false", "no", "0"):
+            return False
+
+    # Convert boolean to consistent representation
+    if isinstance(value, bool):
+        return value
+
+    # Try to convert numeric strings to numbers for comparison
+    if isinstance(value, str):
+        try:
+            # Try integer first
+            return int(value)
+        except ValueError:
+            try:
+                # Try float
+                return float(value)
+            except ValueError:
+                # Return as-is if not numeric
+                return value
+
+    return value
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -342,10 +432,15 @@ def main():
                 if existing_compose != new_compose:
                     needs_update = True
             else:
-                # For catalog apps, always update when values are provided
-                # TrueNAS will determine if actual changes are needed
+                # For catalog apps, compare values to detect changes
                 if values is not None:
-                    needs_update = True
+                    # Get existing app configuration
+                    existing_config = existing_app.get("config", {})
+
+                    # Deep comparison of configuration values
+                    # We need to check if the new values differ from existing config
+                    if _values_differ(existing_config, values):
+                        needs_update = True
 
             if needs_update:
                 if module.check_mode:
