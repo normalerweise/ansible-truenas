@@ -288,9 +288,9 @@ def main():
     audit = module.params["audit"]
     options = module.params["options"]
 
-    # Look up the share
+    # Look up the share by name (names are unique, case-insensitive)
     try:
-        share_info = mw.call("sharing.smb.query", [["path", "=", path]])
+        share_info = mw.call("sharing.smb.query", [["name", "=", name]])
         if len(share_info) == 0:
             share_info = None
         else:
@@ -343,6 +343,9 @@ def main():
         if state == "present":
             # Update share if needed
             arg = {}
+
+            if share_info["path"] != path:
+                arg["path"] = path
 
             if share_info["name"] != name:
                 arg["name"] = name
