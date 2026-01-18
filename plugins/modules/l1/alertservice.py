@@ -143,23 +143,31 @@ def main():
                 attributes["email"] = ""  # Use system default
 
         if existing_service:
-            # Update existing service
-            arg = {}
+            # Update existing service - check what needs to change
+            needs_update = False
 
             # Check if attributes differ
             if existing_service["attributes"] != attributes:
-                arg["attributes"] = attributes
+                needs_update = True
 
             if existing_service["level"] != level:
-                arg["level"] = level
+                needs_update = True
 
             if existing_service["enabled"] != enabled:
-                arg["enabled"] = enabled
+                needs_update = True
 
-            if len(arg) == 0:
+            if not needs_update:
                 # No changes needed
                 result["msg"] = f"Alert service {name} already configured correctly"
             else:
+                # Build update args - name and level are always required by the API
+                arg = {
+                    "name": name,
+                    "level": level,
+                    "attributes": attributes,
+                    "enabled": enabled,
+                }
+
                 # Update the service
                 if module.check_mode:
                     result["msg"] = f"Would have updated alert service {name}: {arg}"

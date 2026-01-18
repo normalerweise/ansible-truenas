@@ -304,6 +304,55 @@ def _normalize_value(value):
     return value
 
 
+def resolve_latest_version(mw, catalog_app, train):
+    """
+    Resolve 'latest' to an actual version number from the catalog.
+
+    The TrueNAS API does not accept 'latest' as a version string.
+    We need to query app.available to get the actual latest version.
+
+    Args:
+        mw: Middleware client
+        catalog_app: Name of the catalog app
+        train: Catalog train (e.g., 'stable')
+
+    Returns:
+        str: The actual latest version string
+
+    Raises:
+        Exception: If unable to determine latest version
+    """
+    try:
+        # Query available apps filtered by app name and train
+        available_apps = mw.call(
+            "app.available",
+            [["name", "=", catalog_app], ["train", "=", train]],
+        )
+
+        if not available_apps:
+            raise Exception(
+                f"App '{catalog_app}' not found in train '{train}'. "
+                "Ensure the catalog is synced and the app name is correct."
+            )
+
+        app_info = available_apps[0]
+
+        # The latest version should be in the app info
+        # Try 'latest_version' first, then fall back to 'version'
+        latest_version = app_info.get("latest_version") or app_info.get("version")
+
+        if not latest_version:
+            raise Exception(
+                f"Could not determine latest version for app '{catalog_app}'. "
+                f"App info: {app_info}"
+            )
+
+        return latest_version
+
+    except Exception as e:
+        raise Exception(f"Error resolving latest version for '{catalog_app}': {e}")
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -351,6 +400,13 @@ def main():
     valid, error = validate_app_name(app_name)
     if not valid:
         module.fail_json(msg=f"Invalid app name: {error}")
+
+    # Resolve 'latest' to actual version for catalog apps
+    if not custom_app and version == "latest" and catalog_app:
+        try:
+            version = resolve_latest_version(mw, catalog_app, train)
+        except Exception as e:
+            module.fail_json(msg=str(e))
 
     # Check if app exists
     try:
