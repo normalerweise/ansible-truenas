@@ -402,7 +402,9 @@ def ensure_present(module, mw, params):
                 "credential_id": existing["id"],
             }
 
-        updated = update_credential(mw, existing["id"], desired_config)
+        # Remove 'type' field for updates - TrueNAS API doesn't allow updating type
+        update_config = {k: v for k, v in desired_config.items() if k != "type"}
+        updated = update_credential(mw, existing["id"], update_config)
         return {
             "changed": True,
             "msg": f"Keychain credential '{name}' updated",
