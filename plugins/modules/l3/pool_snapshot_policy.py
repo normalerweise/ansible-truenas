@@ -387,13 +387,14 @@ class StateComparator:
     """Compares current vs desired state and calculates diff."""
 
     @staticmethod
-    def calculate_diff(current_tasks, desired_tiers, dataset):
+    def calculate_diff(current_tasks, desired_tiers, dataset, recursive):
         """Calculate what needs to change.
 
         Args:
             current_tasks: List of current task dicts from API
             desired_tiers: List of TierDefinition objects
             dataset: Dataset name
+            recursive: Whether tasks should snapshot recursively
 
         Returns:
             StateDiff object
@@ -418,7 +419,7 @@ class StateComparator:
             else:
                 # Tier exists, check if it needs update
                 current_task = current_by_tier[tier_name]
-                if StateComparator._needs_update(current_task, tier_def):
+                if StateComparator._needs_update(current_task, tier_def, recursive):
                     diff.to_update.append((current_task["id"], tier_def))
 
         # Find tasks to delete (in current but not in desired)
@@ -429,16 +430,21 @@ class StateComparator:
         return diff
 
     @staticmethod
-    def _needs_update(task, tier_def):
+    def _needs_update(task, tier_def, recursive):
         """Check if existing task needs update.
 
         Args:
             task: Current task dict from API
             tier_def: Desired TierDefinition
+            recursive: Whether the task should snapshot recursively
 
         Returns:
             True if task needs to be updated
         """
+        # Check recursive flag
+        if task.get("recursive") != recursive:
+            return True
+
         # Check lifetime
         if task.get("lifetime_value") != tier_def.count:
             return True
@@ -579,7 +585,9 @@ class PolicyManager:
         current_tasks = self.api.query_tasks(dataset)
 
         # Calculate diff
-        diff = StateComparator.calculate_diff(current_tasks, tier_defs, dataset)
+        diff = StateComparator.calculate_diff(
+            current_tasks, tier_defs, dataset, recursive
+        )
 
         # Apply changes or return what would change
         if check_mode:
