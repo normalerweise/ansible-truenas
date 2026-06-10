@@ -27,6 +27,7 @@ Direct wrappers around TrueNAS middleware API. Use when you need fine-grained co
 - `normalerweise.truenas.l1.filesystem` - Manage ZFS datasets
 - `normalerweise.truenas.l1.service` - Control TrueNAS services
 - `normalerweise.truenas.l1.sharing_smb` - Configure SMB shares
+- `normalerweise.truenas.l1.cronjob` - Manage TrueNAS cron jobs
 
 ### L2 - Intent-Based (Mid-Level)
 Located in `plugins/modules/l2/`
