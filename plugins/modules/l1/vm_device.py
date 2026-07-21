@@ -44,7 +44,21 @@ options:
   identity:
     description:
       - Subset of C(attributes) keys that uniquely identify this device within the VM.
-      - Defaults per dtype - DISK=[zvol_name|serial], CDROM=[path], NIC=[mac], RAW=[path], DISPLAY=[type], PCI=[pptdev], USB=[device].
+      - Defaults per dtype - DISK=[path], CDROM=[path], NIC=[mac], RAW=[path], DISPLAY=[type], PCI=[pptdev], USB=[device].
+      - For DISK with C(create_zvol=true), pass C(path) explicitly as C(/dev/zvol/<zvol_name>)
+        in C(attributes) — the middleware only persists C(zvol_name)/C(zvol_volsize) at create
+        time and resets them to null/false afterwards, so they cannot be used to re-identify an
+        already-created device on a later run.
+    type: list
+    elements: str
+  create_only:
+    description:
+      - Subset of C(attributes) keys that only apply at creation and are excluded from drift
+        detection and update payloads. Needed for fields the middleware doesn't persist back
+        (e.g. DISK's C(create_zvol)/C(zvol_name)/C(zvol_volsize), reset to null/false once the
+        zvol exists) — without this they would appear to "differ" forever and trigger a
+        C(vm.device.update) on every run.
+      - Defaults per dtype - DISK=[create_zvol, zvol_name, zvol_volsize].
     type: list
     elements: str
   order:
@@ -76,11 +90,11 @@ EXAMPLES = r"""
   normalerweise.truenas.l1.vm_device:
     vm_name: forgejo-runner
     dtype: DISK
-    identity: [zvol_name]
     attributes:
       create_zvol: true
       zvol_name: dozer/vms/forgejo-runner
       zvol_volsize: 32212254720  # 30 GiB in bytes
+      path: /dev/zvol/dozer/vms/forgejo-runner
       type: VIRTIO
 
 - name: Attach the cloud-init seed CDROM
@@ -117,13 +131,24 @@ from ...module_utils.middleware import MiddleWare as MW
 
 
 _DEFAULT_IDENTITY = {
-    "DISK": ("zvol_name", "serial"),
+    # zvol_name/serial are both unusable as default identities: zvol_name is
+    # reset to null by the middleware once the zvol exists, and serial is a
+    # middleware-generated value the caller can't know in advance. path is
+    # the only field that's both deterministic up front and persisted back.
+    "DISK": ("path",),
     "CDROM": ("path",),
     "NIC": ("mac",),
     "RAW": ("path",),
     "DISPLAY": ("type",),
     "PCI": ("pptdev",),
     "USB": ("device",),
+}
+
+# Attributes that only take effect at vm.device.create and are never
+# persisted back by the middleware (it resets them to null/false once
+# applied) — comparing them on later runs would look like permanent drift.
+_DEFAULT_CREATE_ONLY = {
+    "DISK": ("create_zvol", "zvol_name", "zvol_volsize"),
 }
 
 
@@ -145,6 +170,13 @@ def _resolve_identity_keys(module):
     return _DEFAULT_IDENTITY[module.params["dtype"]]
 
 
+def _resolve_create_only_keys(module):
+    keys = module.params["create_only"]
+    if keys:
+        return tuple(keys)
+    return _DEFAULT_CREATE_ONLY.get(module.params["dtype"], ())
+
+
 def _matches(existing_attrs, desired_attrs, identity_keys):
     """A device matches when its dtype is equal AND every identity key has the same value."""
     if existing_attrs.get("dtype") != desired_attrs.get("dtype"):
@@ -155,9 +187,13 @@ def _matches(existing_attrs, desired_attrs, identity_keys):
     return True
 
 
-def _attrs_differ(existing_attrs, desired_attrs):
-    """Drift detection — every key the caller provided must equal the existing record."""
+def _attrs_differ(existing_attrs, desired_attrs, create_only_keys=()):
+    """Drift detection — every non-create-only key the caller provided must equal the
+    existing record. create_only_keys are excluded since the middleware doesn't persist
+    them back (see _DEFAULT_CREATE_ONLY)."""
     for key, want in desired_attrs.items():
+        if key in create_only_keys:
+            continue
         if existing_attrs.get(key) != want:
             return True
     return False
@@ -184,6 +220,7 @@ def main():
             ),
             attributes=dict(type="dict", default={}),
             identity=dict(type="list", elements="str"),
+            create_only=dict(type="list", elements="str"),
             order=dict(type="int"),
             delete_zvol=dict(type="bool", default=False),
             delete_raw_file=dict(type="bool", default=False),
@@ -209,6 +246,7 @@ def main():
         module.fail_json(msg=f"Error resolving VM id: {e}")
 
     identity_keys = _resolve_identity_keys(module)
+    create_only_keys = _resolve_create_only_keys(module)
 
     try:
         existing = _find_matching_device(mw, vm_id, desired_attrs, identity_keys)
@@ -272,7 +310,7 @@ def main():
         module.params["order"] is not None
         and existing.get("order") != module.params["order"]
     )
-    if not _attrs_differ(existing_attrs, desired_attrs) and not order_changed:
+    if not _attrs_differ(existing_attrs, desired_attrs, create_only_keys) and not order_changed:
         result["msg"] = f"Device {existing['id']} is up to date"
         result["device"] = existing
         module.exit_json(**result)
@@ -283,7 +321,11 @@ def main():
         result["device"] = existing
         module.exit_json(**result)
 
-    update_payload = {"attributes": desired_attrs}
+    # create-only keys are never valid on vm.device.update — the middleware already
+    # reset them to null/false, and resending them (e.g. create_zvol=true) risks the
+    # update path re-triggering zvol creation logic that only makes sense at create time.
+    update_attrs = {k: v for k, v in desired_attrs.items() if k not in create_only_keys}
+    update_payload = {"attributes": update_attrs}
     if module.params["order"] is not None:
         update_payload["order"] = module.params["order"]
     try:
