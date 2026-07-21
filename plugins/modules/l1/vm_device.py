@@ -48,7 +48,10 @@ options:
       - For DISK with C(create_zvol=true), pass C(path) explicitly as C(/dev/zvol/<zvol_name>)
         in C(attributes) — the middleware only persists C(zvol_name)/C(zvol_volsize) at create
         time and resets them to null/false afterwards, so they cannot be used to re-identify an
-        already-created device on a later run.
+        already-created device on a later run. C(path) is automatically omitted from the
+        C(vm.device.create) call itself when C(create_zvol=true) — the middleware rejects it
+        there (I(Path should not be provided if create_zvol is set)) and derives it from
+        C(zvol_name), persisting it back for this identity match to use on the next run.
     type: list
     elements: str
   create_only:
@@ -177,6 +180,18 @@ def _resolve_create_only_keys(module):
     return _DEFAULT_CREATE_ONLY.get(module.params["dtype"], ())
 
 
+def _create_payload_attrs(desired_attrs):
+    """Attributes to send on vm.device.create — as opposed to desired_attrs, which is
+    also used for identity matching and drift detection. DISK + create_zvol=true is a
+    documented middleware quirk: `path` must be *absent* from the create call (the
+    middleware derives and persists it from zvol_name), but is still needed in
+    desired_attrs so the default `path` identity can match this device on later runs
+    (see _DEFAULT_IDENTITY) once the middleware resets zvol_name to null."""
+    if desired_attrs.get("dtype") == "DISK" and desired_attrs.get("create_zvol"):
+        return {k: v for k, v in desired_attrs.items() if k != "path"}
+    return desired_attrs
+
+
 def _matches(existing_attrs, desired_attrs, identity_keys):
     """A device matches when its dtype is equal AND every identity key has the same value."""
     if existing_attrs.get("dtype") != desired_attrs.get("dtype"):
@@ -280,14 +295,17 @@ def main():
         module.exit_json(**result)
 
     # state == "present"
-    payload = {
-        "vm": vm_id,
-        "attributes": desired_attrs,
-    }
     if module.params["order"] is not None:
-        payload["order"] = module.params["order"]
+        common_payload = {"order": module.params["order"]}
+    else:
+        common_payload = {}
 
     if existing is None:
+        payload = {
+            "vm": vm_id,
+            "attributes": _create_payload_attrs(desired_attrs),
+            **common_payload,
+        }
         if module.check_mode:
             result["changed"] = True
             result["msg"] = "Would create device"
