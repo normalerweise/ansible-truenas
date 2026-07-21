@@ -45,6 +45,21 @@ options:
     description:
       - RAM allocation in MiB. The middleware expects MB; we pass through verbatim.
     type: int
+  cpu_mode:
+    description:
+      - How the guest vCPU is modeled. C(CUSTOM) (the middleware default) exposes a generic,
+        minimal feature set (e.g. C(qemu64)) with no ISA extensions like AES-NI/AVX2 — safest
+        for live migration between dissimilar hosts, but leaves guest CPU-bound work (crypto,
+        compilation, emulation) slower than the host is capable of. C(HOST-PASSTHROUGH) exposes
+        the host CPU's full feature set 1:1 (fastest, but ties the VM to hosts with an identical
+        or compatible CPU). C(HOST-MODEL) is a portable approximation of the host CPU.
+    type: str
+    choices: [CUSTOM, HOST-MODEL, HOST-PASSTHROUGH]
+  cpu_model:
+    description:
+      - Specific CPU model to emulate. Only meaningful when C(cpu_mode=CUSTOM); the middleware
+        ignores it otherwise.
+    type: str
   min_memory:
     description:
       - Minimum RAM (MiB) for memory ballooning. C(null) disables ballooning.
@@ -163,6 +178,8 @@ _MUTABLE_FIELDS = (
     "threads",
     "memory",
     "min_memory",
+    "cpu_mode",
+    "cpu_model",
     "bootloader",
     "bootloader_ovmf",
     "autostart",
@@ -260,6 +277,8 @@ def main():
             threads=dict(type="int"),
             memory=dict(type="int"),
             min_memory=dict(type="int"),
+            cpu_mode=dict(type="str", choices=["CUSTOM", "HOST-MODEL", "HOST-PASSTHROUGH"]),
+            cpu_model=dict(type="str"),
             bootloader=dict(type="str", choices=["UEFI", "UEFI_CSM"]),
             bootloader_ovmf=dict(type="str"),
             autostart=dict(type="bool"),
