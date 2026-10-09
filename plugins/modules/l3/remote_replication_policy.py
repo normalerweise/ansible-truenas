@@ -61,6 +61,14 @@ options:
       - Whether to recursively replicate child datasets.
     type: bool
     required: true
+  allow_from_scratch:
+    description:
+      - Destroy the target dataset's snapshots and replicate from scratch when
+        source and target share no common snapshot (no incremental base).
+      - Useful for sources that are offline longer than their snapshot
+        retention, at the cost of a full re-transfer.
+    type: bool
+    default: false
   preserve_source_encryption:
     description:
       - Keep source dataset encryption keys at target.
@@ -593,6 +601,7 @@ class RemoteReplicationPolicyManager:
             "lifetime_unit": simple_lifetime_unit,
             "lifetimes": lifetimes,
             "readonly": "SET",
+            "allow_from_scratch": params["allow_from_scratch"],
             "enabled": True,
         }
         repl_config.update(encryption_config)
@@ -700,6 +709,7 @@ def main():
             ssh_credentials_id=dict(type="int", required=True),
             tiers=dict(type="dict", required=True),
             recursive=dict(type="bool", required=True),
+            allow_from_scratch=dict(type="bool", default=False),
             preserve_source_encryption=dict(type="bool", default=True),
             target_encryption=dict(type="bool"),
             target_encryption_key=dict(type="str", no_log=True),
