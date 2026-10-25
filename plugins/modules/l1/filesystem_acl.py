@@ -245,6 +245,13 @@ def main():
         # filesystem.getacl is a synchronous call, not a job
         current_acl = mw.call("filesystem.getacl", path)
     except Exception as e:
+        # Under check mode the path may belong to a dataset an earlier task
+        # would have created - report the pending change instead of failing
+        if module.check_mode and "ENOENT" in str(e):
+            result["changed"] = True
+            result["msg"] = f"Would set ACL on '{path}' (path does not exist yet)"
+            result["debug_info"] = {"acl_params": acl_params}
+            module.exit_json(**result)
         module.fail_json(msg=f"Failed to get current ACL for '{path}': {e}")
 
     # Check if changes are needed
